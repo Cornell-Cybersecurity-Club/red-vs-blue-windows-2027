@@ -332,16 +332,24 @@ if ($ModulesToExecute | Where-Object { $SecretsModules -contains $_ }) {
 }
 
 # ── Pre-Hardening Backup ─────────────────────────────────────────────────────
-Write-Log -Message "=== Running Pre-Hardening Backup ===" -Level "INFO" -LogFile $LogFile
-try {
-    $backupModule = "$ScriptRoot/src/modules/11_Backup_Services.ps1"
-    if (Test-Path $backupModule) {
-        & $backupModule -LogFile $LogFile -IsDomainController $global:IsDomainController -Phase "Pre"
-    } else {
-        Write-Log -Message "Backup module not found -- skipping pre-hardening backup." -Level "WARNING" -LogFile $LogFile
+Write-Host ""
+Write-Host "OPTION: Run a pre-hardening backup to snapshot GPOs, DNS, AD, firewall rules, etc." -ForegroundColor Yellow
+Write-Host "  This captures the current state before any changes are applied." -ForegroundColor Yellow
+$runBackup = Read-Host "Run pre-hardening backup? [y/n]"
+if ($runBackup -eq 'y') {
+    Write-Log -Message "=== Running Pre-Hardening Backup ===" -Level "INFO" -LogFile $LogFile
+    try {
+        $backupModule = "$ScriptRoot/src/modules/11_Backup_Services.ps1"
+        if (Test-Path $backupModule) {
+            & $backupModule -LogFile $LogFile -IsDomainController $global:IsDomainController -Phase "Pre"
+        } else {
+            Write-Log -Message "Backup module not found -- skipping pre-hardening backup." -Level "WARNING" -LogFile $LogFile
+        }
+    } catch {
+        Write-Log -Message "Pre-hardening backup failed: $_" -Level "ERROR" -LogFile $LogFile
     }
-} catch {
-    Write-Log -Message "Pre-hardening backup failed: $_" -Level "ERROR" -LogFile $LogFile
+} else {
+    Write-Log -Message "Pre-hardening backup skipped by user." -Level "WARNING" -LogFile $LogFile
 }
 
 foreach ($Module in $ModulesToExecute) {
